@@ -106,57 +106,117 @@
         if (!token) {
           window.location.href = "index.html";
         }
+        loadChatHistory();
       };
 
-      function sendMessage(event) {
-        event.preventDefault();
-        const chatInput = document.getElementById("chat-input");
-        const prompt = chatInput.value.trim();
+      const textarea = document.getElementById("chat-input");
+
+      textarea.addEventListener("input", function () {
+        this.style.height = "auto";
+        this.style.height = (this.scrollHeight) + "px";
+      });
+
+
+      function loadChatHistory() {
         const chatOutput = document.getElementById("chat-output");
+        const chatInput = document.getElementById("chat-input");
+        const apiKey = localStorage.getItem("authToken");
+      
+        fetch("https://Shaz.pythonanywhere.com/get_chat", {
+          method: "GET",
+          headers: {
+            "x-api-key": apiKey,
+            type: "as",
+            limit: "10",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.res && Array.isArray(data.res)) {
+              data.res.forEach((messagePair) => {
+                if (Array.isArray(messagePair) && messagePair.length === 2) {
+                  const prompt = messagePair[0]; 
+                  const reply = messagePair[1]; 
+      
+                  const messageItem = document.createElement("li");
+                  messageItem.textContent = prompt;
+                  messageItem.classList.add("user-message");
+      
+                  const replyItem = document.createElement("li");
+                  replyItem.textContent = reply;
+                  replyItem.classList.add("chat-output");
+      
+                  chatOutput.insertBefore(messageItem, chatOutput.firstChild);
+      
+                  
+                  chatOutput.insertBefore(replyItem, chatOutput.firstChild);
+                }
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("Error loading chat history:", error);
+          });
+      }
+      
 
-        if (prompt) {
-          const userMessageElement = document.createElement("li");
-          userMessageElement.classList.add("user-message");
-          userMessageElement.textContent = `${prompt}`;
-          chatOutput.appendChild(userMessageElement);
+      let isRequestInProgress = false;  
 
-          const apiUrl = "https://Shaz.pythonanywhere.com/pdf_ai"; 
-          fetch(apiUrl, {
+function sendMessage() {
+    const chatOutput = document.getElementById("chat-output");
+    const chatInput = document.getElementById("chat-input");
+    const sendButton = document.getElementById("send-button"); 
+
+    if (chatInput.value.trim() !== "" && !isRequestInProgress) { 
+        isRequestInProgress = true; 
+
+        sendButton.disabled = true;
+
+        fetch("https://Shaz.pythonanywhere.com/assistant", {
             method: "GET",
             headers: {
-              "x-api-key": localStorage.getItem("authToken"),
-              prompt: prompt,
+                "x-api-key": localStorage.getItem("authToken"),
+                prompt: chatInput.value,
             },
-          })
-            .then((response) => {
-              if (!response.ok) throw new Error("Failed to fetch PDF");
-              return response.blob(); 
-            })
+        })
+            .then((response) => response.json())
             .then((data) => {
-              const url = window.URL.createObjectURL(data);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `cryo_pdf.pdf`;
-              link.click(); 
+                const messageItem = document.createElement("li");
+                messageItem.textContent = chatInput.value;
+                messageItem.classList.add("user-message");
 
-              const aiMessageElement = document.createElement("li");
-              aiMessageElement.classList.add("ai-message");
-              aiMessageElement.textContent = `PDF generated and downloaded for "${prompt}"`;
-              chatOutput.appendChild(aiMessageElement);
+                const replyItem = document.createElement("li");
+                replyItem.textContent = data.res;
+                replyItem.classList.add("chat-output");
 
-              chatInput.value = ""; 
-              chatOutput.scrollTop = chatOutput.scrollHeight; 
+                chatOutput.insertBefore(messageItem, chatOutput.firstChild);
+                chatInput.value = "";
+                chatOutput.insertBefore(replyItem, chatOutput.firstChild);
             })
-            .catch((error) => console.error("Error:", error));
-        }
-      }
+            .catch((error) => {
+                console.error("Error:", error);
+            })
+            .finally(() => {
+                sendButton.disabled = false;
+                isRequestInProgress = false;  
+            });
+    }
+}
+
+document.getElementById("chat-input").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        sendMessage(); 
+    }
+});
+
+document.getElementById("send-button").addEventListener("click", sendMessage);
+
 
       function toggleDropdown() {
         const dropdownMenu = document.getElementById("dropdown-menu");
         dropdownMenu.classList.toggle("hidden");
       }
 
-// Handle logout functionality
 function logout() {
   fetch("https://Shaz.pythonanywhere.com/logout", {
     method: "GET",
@@ -174,9 +234,7 @@ function logout() {
   localStorage.removeItem("authToken");
   window.location.href = "index.html";
   updateAuthButton();
-  // Redirect to login page after logout
 }
-
     </script>
   </body>
 </html>
