@@ -124,7 +124,7 @@
         const chatInput = document.getElementById("chat-input");
         const apiKey = localStorage.getItem("authToken");
       
-        fetch("http://Shaz.pythonanywhere.com/get_chat", {
+        fetch("https://Shaz.pythonanywhere.com/get_chat", {
           method: "GET",
           headers: {
             "x-api-key": apiKey,
@@ -178,7 +178,7 @@ function sendMessage() {
         // Disable the button to prevent multiple clicks
         sendButton.disabled = true;
 
-        fetch("http://Shaz.pythonanywhere.com/assistant", {
+        fetch("https://Shaz.pythonanywhere.com/assistant", {
             method: "GET",
             headers: {
                 "x-api-key": localStorage.getItem("authToken"),
@@ -228,7 +228,7 @@ document.getElementById("send-button").addEventListener("click", sendMessage);
 
 // Handle logout functionality
 function logout() {
-  fetch("http://Shaz.pythonanywhere.com/logout", {
+  fetch("https://Shaz.pythonanywhere.com/logout", {
     method: "GET",
     headers: {
       "x-api-key": localStorage.getItem("authToken"),
