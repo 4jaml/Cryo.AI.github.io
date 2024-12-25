@@ -120,7 +120,7 @@
           userMessageElement.textContent = `${prompt}`;
           chatOutput.appendChild(userMessageElement);
 
-          const apiUrl = "http://Shaz.pythonanywhere.com/pdf_ai"; 
+          const apiUrl = "https://Shaz.pythonanywhere.com/pdf_ai"; 
           fetch(apiUrl, {
             method: "GET",
             headers: {
@@ -158,7 +158,7 @@
 
 // Handle logout functionality
 function logout() {
-  fetch("http://Shaz.pythonanywhere.com/logout", {
+  fetch("https://Shaz.pythonanywhere.com/logout", {
     method: "GET",
     headers: {
       "x-api-key": localStorage.getItem("authToken"),
