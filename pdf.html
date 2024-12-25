@@ -101,140 +101,76 @@
     </div>
 
     <script>
-      window.onload = function () {
+            window.onload = function () {
         const token = localStorage.getItem("authToken");
         if (!token) {
           window.location.href = "index.html";
         }
-        loadChatHistory();
       };
 
-      const textarea = document.getElementById("chat-input");
-
-      textarea.addEventListener("input", function () {
-        this.style.height = "auto";
-        this.style.height = (this.scrollHeight) + "px";
-      });
-
-
-      function loadChatHistory() {
-        const chatOutput = document.getElementById("chat-output");
+      function sendMessage(event) {
+        event.preventDefault();
         const chatInput = document.getElementById("chat-input");
-        const apiKey = localStorage.getItem("authToken");
+        const prompt = chatInput.value.trim();
+        const chatOutput = document.getElementById("chat-output");
+        const sendButton = document.getElementById("send-button");
       
-        fetch("https://Shaz.pythonanywhere.com/get_chat", {
-          method: "GET",
-          headers: {
-            "x-api-key": apiKey,
-            type: "as",
-            limit: "10",
-          },
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.res && Array.isArray(data.res)) {
-              data.res.forEach((messagePair) => {
-                if (Array.isArray(messagePair) && messagePair.length === 2) {
-                  const prompt = messagePair[0]; 
-                  const reply = messagePair[1]; 
+        if (sendButton.disabled) return;
       
-                  const messageItem = document.createElement("li");
-                  messageItem.textContent = prompt;
-                  messageItem.classList.add("user-message");
+        if (prompt) {
+          sendButton.disabled = true; // Disable the button
+          chatInput.value = ""; // Clear input field immediately
       
-                  const replyItem = document.createElement("li");
-                  replyItem.textContent = reply;
-                  replyItem.classList.add("chat-output");
+          const userMessageElement = document.createElement("li");
+          userMessageElement.classList.add("user-message");
+          userMessageElement.textContent = `${prompt}`;
+          chatOutput.appendChild(userMessageElement);
       
-                  chatOutput.insertBefore(messageItem, chatOutput.firstChild);
-      
-                  
-                  chatOutput.insertBefore(replyItem, chatOutput.firstChild);
-                }
-              });
-            }
-          })
-          .catch((error) => {
-            console.error("Error loading chat history:", error);
-          });
-      }
-      
-
-      let isRequestInProgress = false;  
-
-function sendMessage() {
-    const chatOutput = document.getElementById("chat-output");
-    const chatInput = document.getElementById("chat-input");
-    const sendButton = document.getElementById("send-button"); 
-
-    if (chatInput.value.trim() !== "" && !isRequestInProgress) { 
-        isRequestInProgress = true; 
-
-        sendButton.disabled = true;
-
-        fetch("https://Shaz.pythonanywhere.com/assistant", {
+          const apiUrl = "https://Shaz.pythonanywhere.com/pdf_ai";
+          fetch(apiUrl, {
             method: "GET",
             headers: {
-                "x-api-key": localStorage.getItem("authToken"),
-                prompt: chatInput.value,
+              "x-api-key": localStorage.getItem("authToken"),
+              prompt: prompt,
             },
-        })
-            .then((response) => response.json())
+          })
+            .then((response) => {
+              if (!response.ok) throw new Error("Failed to fetch PDF");
+              return response.blob();
+            })
             .then((data) => {
-                const messageItem = document.createElement("li");
-                messageItem.textContent = chatInput.value;
-                messageItem.classList.add("user-message");
-
-                const replyItem = document.createElement("li");
-                replyItem.textContent = data.res;
-                replyItem.classList.add("chat-output");
-
-                chatOutput.insertBefore(messageItem, chatOutput.firstChild);
-                chatInput.value = "";
-                chatOutput.insertBefore(replyItem, chatOutput.firstChild);
+              const url = window.URL.createObjectURL(data);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `cryo_pdf.pdf`;
+              link.click();
+      
+              const aiMessageElement = document.createElement("li");
+              aiMessageElement.classList.add("ai-message");
+              aiMessageElement.textContent = `PDF generated and downloaded for "${prompt}"`;
+              chatOutput.appendChild(aiMessageElement);
+      
+              chatOutput.scrollTop = chatOutput.scrollHeight;
             })
-            .catch((error) => {
-                console.error("Error:", error);
-            })
+            .catch((error) => console.error("Error:", error))
             .finally(() => {
-                sendButton.disabled = false;
-                isRequestInProgress = false;  
+              sendButton.disabled = false; // Re-enable the button
             });
-    }
-}
-
-document.getElementById("chat-input").addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        sendMessage(); 
-    }
-});
-
-document.getElementById("send-button").addEventListener("click", sendMessage);
-
-
+        }
+      }
+      
+      const chatInput = document.getElementById("chat-input");
+      const sendButton = document.getElementById("send-button");
+      chatInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          sendButton.click();
+        }
+      });
+      
       function toggleDropdown() {
         const dropdownMenu = document.getElementById("dropdown-menu");
         dropdownMenu.classList.toggle("hidden");
       }
-
-function logout() {
-  fetch("https://Shaz.pythonanywhere.com/logout", {
-    method: "GET",
-    headers: {
-      "x-api-key": localStorage.getItem("authToken"),
-    },
-  })
-    .then(() => {
-      console.log("logged out..");
-    })
-    .catch((error) => {
-      console.error("Error during logout:", error);
-    });
-
-  localStorage.removeItem("authToken");
-  window.location.href = "index.html";
-  updateAuthButton();
-}
     </script>
   </body>
 </html>
